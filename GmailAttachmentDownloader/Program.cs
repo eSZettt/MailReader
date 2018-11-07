@@ -8,13 +8,13 @@ using Google.Apis.Gmail.v1.Data;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
 
-namespace ConsoleApp2
+namespace GmailAttachmentDownloader
 {
     class Program
     {
         static string[] Scopes = { GmailService.Scope.GmailModify };
         static string ApplicationName = "Gmail attachment downloader";
-        static List<string> fileTypes = new List<string> { ".png", ".jpg", ".jpeg", ".bmp" }; //used for deletions
+        static List<string> fileTypes = new List<string> { ".png", ".jpg", ".jpeg", ".bmp" }; //oddball - used for deletions
         static int interval = 20; //time between checks in seconds
         static string downloadPath = @"C:\Users\jisacd1\Desktop\Test"; //put attachments here
         static int fileSizeLowerBound = 100000; //don't pull if it's smaller than this
@@ -42,9 +42,9 @@ namespace ConsoleApp2
 
                 foreach (string ID in messageIDs)
                 {
-                    Console.WriteLine($"Pulling attachments...");
+                    Console.WriteLine($"Pulling attachments from message {ID}...");
 
-                    int count = GetAttachments(service, "me", ID, downloadPath, uniqueNum);
+                    int count = GetAttachments(service, "me", ID, downloadPath, ref uniqueNum);
 
                     Console.WriteLine($"Put {count} attachments into {downloadPath}.");
                 }
@@ -97,6 +97,8 @@ namespace ConsoleApp2
             IList<Message> thinMessageList = getmessages.Execute().Messages;
             List<Message> messages = new List<Message>();
 
+            //.List only pulls IDs, but we need InternalDate, so pull everything I guess...
+            //This is what should be improved.
             foreach(Message message in thinMessageList)
             {
                 var fullMessageRequest = service.Users.Messages.Get("me", message.Id);
@@ -139,7 +141,7 @@ namespace ConsoleApp2
         /// can be used to indicate the authenticated user.</param>
         /// <param name="messageId">ID of Message containing attachment.</param>
         /// <param name="outputDir">Directory used to store attachments.</param>
-        public static int GetAttachments(GmailService service, string userId, string messageId, string outputDir, int uniqueNum)
+        public static int GetAttachments(GmailService service, string userId, string messageId, string outputDir, ref int uniqueNum)
         {
             int count = 0;
             try
